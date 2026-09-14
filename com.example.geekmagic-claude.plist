@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.example.geekmagic-claude</string>
+    <key>ProgramArguments</key>
+    <array>
+        <!-- Replace with the output of `which python3` on your machine. -->
+        <string>/opt/homebrew/opt/python@3.13/bin/python3.13</string>
+        <!-- Absolute path to geekmagic_claude.py after cloning this repo. -->
+        <string>/Users/YOUR_USERNAME/path/to/geekmagic-claude-usage/geekmagic_claude.py</string>
+        <string>--ip</string>
+        <string>YOUR_DEVICE_IP</string>
+        <string>--animation</string>
+        <string>random</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+    <key>StartInterval</key>
+    <integer>60</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/YOUR_USERNAME/path/to/geekmagic-claude-usage/log.txt</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/YOUR_USERNAME/path/to/geekmagic-claude-usage/log.txt</string>
+</dict>
+</plist>
