@@ -7,7 +7,6 @@ animated pixel-art mascot. **No firmware reflash required** — it uses the
 device's stock, unmodified web API.
 
 ![Static preview](docs/preview.jpg)
-![Laptop animation preview](docs/preview-laptop.gif)
 
 ## How it works
 
@@ -48,7 +47,7 @@ of the box.
 ## Quick start
 
 ```bash
-git clone https://github.com/rsantiagourrego/geekmagic-claude-usage.git
+git clone https://github.com/RubenU2002/geekmagic-claude-usage.git
 cd geekmagic-claude-usage
 pip3 install Pillow
 
@@ -69,15 +68,30 @@ Pass `--animation NAME` (default: `laptop`). All of them live side by side
 in the `ANIMATIONS` dict in `geekmagic_claude.py` — picking one never
 deletes another, and adding a new one is just adding a new entry.
 
-| Name | What it does |
-|---|---|
-| `idle` | Just the mascot's gentle idle bob |
-| `laptop` | Pulls a tiny laptop up into view and holds it |
-| `coffee` | Pulls out a mug of coffee, with steam wisps rising |
-| `eureka` | A little idea spark pops up beside its head |
-| `dance` | A side-to-side wiggle dance |
-| `typing` | Like `laptop`, plus a moving cursor on the little screen |
-| `random` | Picks a different one from the list above on every push |
+<table>
+<tr>
+  <td align="center"><img src="docs/preview-idle.gif" width="160"><br><code>idle</code></td>
+  <td align="center"><img src="docs/preview-laptop.gif" width="160"><br><code>laptop</code></td>
+  <td align="center"><img src="docs/preview-coffee.gif" width="160"><br><code>coffee</code></td>
+</tr>
+<tr>
+  <td align="center">Just the mascot's gentle idle bob</td>
+  <td align="center">Pulls a tiny laptop up into view and holds it</td>
+  <td align="center">Pulls out a mug of coffee, with steam wisps rising</td>
+</tr>
+<tr>
+  <td align="center"><img src="docs/preview-eureka.gif" width="160"><br><code>eureka</code></td>
+  <td align="center"><img src="docs/preview-dance.gif" width="160"><br><code>dance</code></td>
+  <td align="center"><img src="docs/preview-typing.gif" width="160"><br><code>typing</code></td>
+</tr>
+<tr>
+  <td align="center">A little idea spark pops up beside its head</td>
+  <td align="center">A side-to-side wiggle dance</td>
+  <td align="center">Like <code>laptop</code>, plus a moving cursor on the little screen</td>
+</tr>
+</table>
+
+`random` picks a different one from the list above on every push.
 
 ```bash
 python3 geekmagic_claude.py --ip 192.168.1.18 --animation coffee
