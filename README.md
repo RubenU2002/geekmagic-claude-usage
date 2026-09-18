@@ -11,7 +11,7 @@ device's stock, unmodified web API.
 ## How it works
 
 1. It shells out to your already-authenticated Claude Code CLI:
-   `claude -p --safe-mode --output-format json --max-budget-usd 0.000001 --tools "" --no-session-persistence /usage`
+   `claude -p --safe-mode --output-format json --max-budget-usd 0.000001 --tools "" --no-session-persistence --no-chrome /usage`
    This runs Claude Code's own built-in `/usage` command in a locked-down,
    zero-tool mode. The script double-checks the response reports
    `total_cost_usd == 0` and zero token usage before trusting it — **this
@@ -158,6 +158,14 @@ update the plist paths.
 installed somewhere like `/opt/homebrew/bin` (Homebrew on Apple Silicon),
 add it to the plist's `EnvironmentVariables` (already done in the example
 file) or the script won't find the `claude` executable.
+
+**Gotcha (macOS):** if you see a repeating "`python3.13` solicita acceso a
+datos de otras apps" / "wants access to data from other apps" permission
+prompt, that's Claude Code's own "Claude in Chrome" integration trying to
+talk to the Chrome browser via Apple Events on every single run — since
+this pushes every 60 seconds, it can reappear constantly. `fetch_usage()`
+already runs `claude` with `--no-chrome` to disable that integration and
+stop the prompt entirely.
 
 Other platforms: use `cron`, a `systemd --user` timer, or Windows Task
 Scheduler to run `python3 geekmagic_claude.py --ip ... --animation ...` on a

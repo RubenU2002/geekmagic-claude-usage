@@ -64,6 +64,7 @@ def fetch_usage() -> dict:
                 "--max-budget-usd", "0.000001",
                 "--tools", "",
                 "--no-session-persistence",
+                "--no-chrome",
                 "/usage",
             ],
             capture_output=True, text=True, timeout=30,
