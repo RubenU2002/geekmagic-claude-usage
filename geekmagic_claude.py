@@ -33,7 +33,9 @@ _OLD_IMAGE_NAMES = ("claude-usage.jpg",)  # cleaned up on first run after the GI
 
 # Claude's own palette (warm ink + a vivid, saturated orange), laid out
 # like a watch face: bold numbers, pill badges, no card boxes.
-BG = "#18160F"
+# BG is deliberately not near-black: cheap small IPS panels show backlight
+# bleed/unevenness much more on very dark fills, especially at the edges.
+BG = "#2C2925"
 PILL_BG = "#4A3F4D"
 CURRENT_ACCENT = "#FA5407"
 WEEKLY_ACCENT = "#E8B24D"
