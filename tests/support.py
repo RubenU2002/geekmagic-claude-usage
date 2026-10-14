@@ -180,6 +180,7 @@ class FakeLocator:
         self.found: str | None = None  # what find_device() returns
         self.probes: list[str] = []
         self.searches: list = []
+        self.local: list[str] = ["192.168.1."]  # the networks the computer is on
 
     def probe(self, host, timeout=2.0) -> bool:
         self.probes.append(host)
@@ -188,6 +189,9 @@ class FakeLocator:
     def find_device(self, prefer=None):
         self.searches.append(prefer)
         return self.found
+
+    def networks(self) -> list[str]:
+        return list(self.local)
 
 
 class FakeTerminal:

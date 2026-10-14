@@ -8,6 +8,7 @@ STALE_SECONDS = 180  # numbers that couldn't be refreshed for this long get the 
 OTHER_REFRESH = 120  # how often the provider that isn't on screen is queried (for its alerts and fresh image)
 REDISCOVER_AFTER = 15  # unreachable for this long -> look for the device on the network (its router may have given it a new IP)
 REDISCOVER_EVERY = 30  # ...and then at most this often (a scan takes ~4 s)
+OFFLINE_NOTICE_AFTER = 45  # the screen has been gone this long (and a search for it found nothing): say so, once
 DISCOVER_RETRY = 30  # while there's no address at all, how often to scan
 LOCK_POLL = 3  # between checks of whether the computer got locked / unlocked
 PAUSE_POLL = 5  # while paused, how often the worker looks again

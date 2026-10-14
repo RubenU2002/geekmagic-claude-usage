@@ -14,6 +14,8 @@ def build_menu(app, open_logs) -> pystray.Menu:
     view, power, backlight, notifications = app.view, app.power, app.backlight, app.notifications
     titles = app.providers.titles
     return pystray.Menu(
+        pystray.MenuItem(lambda _: app.screen.status_line(), None, enabled=False),
+        pystray.Menu.SEPARATOR,
         pystray.MenuItem("Alternar Claude / Codex", app.toggle, default=True, visible=False),
         *(pystray.MenuItem(title, app.select_action(key), radio=True,
                            checked=lambda _, key=key: view.mode is None and view.provider == key)

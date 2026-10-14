@@ -59,6 +59,7 @@ class TrayController:
             ip, animation, providers, renderer, display_factory, locator,
             active_key=lambda: self.view.key, flag=self.agents.flag,
             notify=notify, save=save, set_title=ui.set_title, tooltip=self.tooltip, wake=self.wake,
+            refresh_menu=ui.refresh_menu,
         )
         self.backlight = Backlight(self.screen, notify, save, ui.refresh_menu, night_hours, night_level)
         self.power = Power(lock_sensor, self._refresh_title_and_menu, self._lock_changed, self.wake, self.stop, save)
@@ -82,6 +83,7 @@ class TrayController:
         notes = self.agents.tooltip_notes()
         if notes:
             view += " · " + " y ".join(notes)
+        view += f" · {self.screen.status_note()}"
         if self.power.paused:
             return f"GeekMagic: {view} (en pausa)"
         if self.power.pause_on_lock and self.power.locked:

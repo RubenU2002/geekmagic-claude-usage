@@ -87,6 +87,9 @@ class DeviceLocator(Protocol):
     def find_device(self, prefer: str | None = None) -> str | None:
         """Look for it on the local network (`prefer` is tried first)."""
 
+    def networks(self) -> list[str]:
+        """The networks this computer is on, as "192.168.1." prefixes, the main one first ([] without any)."""
+
 
 @dataclass
 class Rendered:

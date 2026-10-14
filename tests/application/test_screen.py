@@ -67,6 +67,87 @@ class FindingTheDeviceTests(AppTestCase):
         self.assertEqual(app.screen.ip, "192.168.1.20")
 
 
+class OutageNoticeTests(AppTestCase):
+    def gone(self, app, seconds):
+        app.screen.mark_offline("timed out")
+        app.screen.offline_since = time.monotonic() - seconds
+        app.screen.last_scan = 0.0
+        self.locator.found = None
+
+    def test_says_so_once_when_a_search_finds_nothing(self):
+        app = self.make("192.168.1.50")
+        self.gone(app, config.OFFLINE_NOTICE_AFTER + 1)
+        app.screen.maybe_rediscover()
+        app.screen.last_scan = 0.0
+        app.screen.maybe_rediscover()
+        self.assertEqual([n[0] for n in self.notes], ["Sin conexión con la pantalla"])
+        self.assertIn("192.168.1.50", self.notes[0][1])
+
+    def test_not_for_a_short_blip(self):
+        app = self.make("192.168.1.50")
+        self.gone(app, config.REDISCOVER_AFTER + 1)
+        app.screen.maybe_rediscover()
+        self.assertEqual(self.notes, [])
+
+    def test_names_another_network_as_the_reason(self):
+        app = self.make("192.168.1.50")
+        self.locator.local = ["192.168.11."]
+        self.gone(app, config.OFFLINE_NOTICE_AFTER + 1)
+        app.screen.maybe_rediscover()
+        self.assertIn("192.168.11.x", self.notes[0][1])
+        self.assertIn("otra red", self.notes[0][1])
+
+    def test_no_network_at_all(self):
+        app = self.make("192.168.1.50")
+        self.locator.local = []
+        self.gone(app, config.OFFLINE_NOTICE_AFTER + 1)
+        app.screen.maybe_rediscover()
+        self.assertIn("no tiene conexión de red", self.notes[0][1])
+
+    def test_says_when_it_is_back(self):
+        app = self.make("192.168.1.50")
+        self.gone(app, config.OFFLINE_NOTICE_AFTER + 1)
+        app.screen.maybe_rediscover()
+        self.assertTrue(app.screen.device_is_back())
+        self.assertEqual(self.notes[-1][0], "Pantalla conectada")
+        self.assertIn("192.168.1.50", self.notes[-1][1])
+        self.assertFalse(app.screen.offline_noticed)
+
+    def test_a_blip_that_was_never_announced_ends_quietly(self):
+        app = self.make("192.168.1.50")
+        app.screen.mark_offline("timed out")
+        self.assertTrue(app.screen.device_is_back())
+        self.assertEqual(self.notes, [])
+
+    def test_finding_it_at_a_new_address_is_the_only_notice(self):
+        app = self.make("192.168.1.50")
+        self.gone(app, config.OFFLINE_NOTICE_AFTER + 1)
+        app.screen.maybe_rediscover()
+        self.locator.found = "192.168.1.73"
+        app.screen.last_scan = 0.0
+        app.screen.maybe_rediscover()
+        self.assertTrue(app.screen.device_is_back())
+        self.assertEqual([n[0] for n in self.notes], ["Sin conexión con la pantalla", "Pantalla encontrada"])
+
+
+class StatusTests(AppTestCase):
+    def test_the_address_shows_while_connected_and_says_so_when_not(self):
+        app = self.make("192.168.1.73")
+        self.assertEqual(app.screen.status_line(), "Pantalla: 192.168.1.73")
+        self.assertIn("pantalla 192.168.1.73", app.tooltip())
+        app.screen.mark_offline("timed out")
+        self.assertEqual(app.screen.status_line(), "Pantalla: sin conexión (192.168.1.73)")
+        self.assertIn("pantalla sin conexión", app.tooltip())
+        self.assertEqual(self.make(None).screen.status_line(), "Pantalla: buscando...")
+
+    def test_the_menu_is_refreshed_when_it_changes(self):
+        app = self.make("192.168.1.73")
+        before = app.ui.menu_refreshes
+        app.screen.mark_offline("timed out")
+        app.screen.device_is_back()
+        self.assertGreaterEqual(app.ui.menu_refreshes, before + 2)
+
+
 class ClicksAndUploadsTests(AppTestCase):
     def test_no_upload_starts_right_after_a_click(self):
         app = self.make()

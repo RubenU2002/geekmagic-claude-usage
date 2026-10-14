@@ -15,3 +15,6 @@ tray_state.json
 tray.lock
 .venv/
 .uv-cache/
+
+# redeploy stamp
+.claude/.deployed-hash

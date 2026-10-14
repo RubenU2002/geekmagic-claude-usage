@@ -27,7 +27,7 @@ class Screen:
                  display_factory: Callable[[str], Display], locator: DeviceLocator, *,
                  active_key: Callable[[], str], flag: Callable[[str, object], object], notify: Callable[[str, str], None],
                  save: Callable[[], None], set_title: Callable[[str], None], tooltip: Callable[[], str],
-                 wake: threading.Event) -> None:
+                 wake: threading.Event, refresh_menu: Callable[[], None] = lambda: None) -> None:
         self.animation = animation  # "auto" / "random", or the name of one animation to pin
         self.providers = providers
         self.renderer = renderer
@@ -41,6 +41,7 @@ class Screen:
         self.set_title = set_title
         self.tooltip = tooltip
         self.wake = wake
+        self.refresh_menu = refresh_menu  # the tray menu shows where the screen is
         self.given_ip = ip  # --ip
         self.saved_ip: str | None = None  # last address the device answered on, see restore
         self.ip = ""  # "" until the device is found
@@ -53,6 +54,7 @@ class Screen:
         self.last_scan = 0.0
         self.offline = False  # the device didn't answer on the last attempt
         self.offline_since: float | None = None
+        self.offline_noticed = False  # this outage has been announced (so its end is too)
         self.shown_failed = False  # the last attempt to put a remembered image on screen didn't get through
         self.error_shown: dict[str, str] = {}  # provider -> the error its image on the device says
         self.push_lock = threading.Lock()  # the device serves one request at a time
@@ -86,7 +88,9 @@ class Screen:
         if announce and changed:
             log.info("device found at %s", ip)
             self.notify("Pantalla encontrada", f"GeekMagic en {ip}")
+            self.offline_noticed = False  # (that said it: no second "connected" notice)
         if changed:
+            self.refresh_menu()
             self.sync_with_device()  # a different device may not have our images
 
     def resolve_device(self) -> None:
@@ -117,6 +121,42 @@ class Screen:
         found = self.locator.find_device(prefer=self.ip or None)
         if found and found != self.ip:
             self.set_ip(found, announce=True)
+        elif not found:
+            self.announce_outage()
+
+    def announce_outage(self) -> None:
+        """Once per outage, after a search for the screen found nothing: say that it's gone and the likely why (a notice
+        on the first miss would only nag about blips)."""
+        if (self.offline_noticed or not self.offline or self.offline_since is None
+                or time.monotonic() - self.offline_since < config.OFFLINE_NOTICE_AFTER
+                or self.last_scan < self.offline_since):
+            return
+        self.offline_noticed = True
+        message = self.outage_reason()
+        log.warning("announcing: %s", message)
+        self.notify("Sin conexión con la pantalla", message)
+
+    def outage_reason(self) -> str:
+        networks = self.locator.networks()
+        if not networks:
+            return "Este PC no tiene conexión de red."
+        if self.ip and not any(self.ip.startswith(prefix) for prefix in networks):
+            return (f"El PC está en la red {networks[0]}x y la pantalla estaba en {self.ip}, que es otra red: "
+                    "¿cambió de WiFi o de router?")
+        where = f" en {self.ip}" if self.ip else ""
+        return f"No responde{where} ni aparece en la red {networks[0]}x: ¿está apagada, sin WiFi o con otra IP?"
+
+    def status_line(self) -> str:
+        """Where the screen is, for the tray menu."""
+        if not self.ip:
+            return "Pantalla: buscando..."
+        return f"Pantalla: sin conexión ({self.ip})" if self.offline else f"Pantalla: {self.ip}"
+
+    def status_note(self) -> str:
+        """The same, for the icon's tooltip."""
+        if not self.ip:
+            return "buscando la pantalla"
+        return "pantalla sin conexión" if self.offline else f"pantalla {self.ip}"
 
     # --- what's on the device -----------------------------------------------------------------------------------
 
@@ -199,7 +239,8 @@ class Screen:
             log.warning("device unreachable (%s), retrying every %ss", reason, config.RETRY_SECONDS)
             self.offline = True
             self.offline_since = time.monotonic()
-        self.set_title("GeekMagic: sin conexion con la pantalla, reintentando")
+            self.refresh_menu()
+        self.set_title("GeekMagic: sin conexión con la pantalla, reintentando")
 
     def device_is_back(self) -> bool:
         """While offline: pin the remembered view with one small request. If it works the device is back and its
@@ -216,9 +257,17 @@ class Screen:
         except OSError as e:
             self.mark_offline(e)
             return False
+        self.came_back()
+        return True
+
+    def came_back(self) -> None:
         log.info("device is back")
         self.offline, self.offline_since = False, None
-        return True
+        if self.offline_noticed:
+            self.offline_noticed = False
+            self.notify("Pantalla conectada", f"GeekMagic responde de nuevo en {self.ip}")
+        self.refresh_menu()
+        self.set_title(self.tooltip())
 
     def deliver(self, key: str, data: Usage | list[Usage] | ErrorScreen) -> str:
         """Upload `data` for a view: "ok", "cancelled" (a click got in the way), "offline" or "error"."""
@@ -239,8 +288,7 @@ class Screen:
             return "error"
         log.info("pushed %s", key)
         if self.offline:
-            log.info("device is back")
-            self.offline, self.offline_since = False, None
+            self.came_back()
         self.set_title(self.tooltip())
         return "ok"
 

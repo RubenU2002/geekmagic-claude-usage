@@ -79,3 +79,6 @@ class Locator:
 
     def find_device(self, prefer: str | None = None) -> str | None:
         return find_device(prefer)
+
+    def networks(self) -> list[str]:
+        return local_networks()
