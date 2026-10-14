@@ -47,10 +47,14 @@ class Backlight:
     def snapshot(self) -> dict:
         return {"brightness": self.brightness, "night": self.night, "dim_on_lock": self.dim_on_lock}
 
-    def apply_brightness(self, level: int) -> bool:
+    def apply_brightness(self, level: int, quiet: bool = False) -> bool:
         """Send a backlight level to the device. The device serves one request at a time, so an upload in flight is
-        cancelled first (the worker redoes it)."""
+        cancelled first (the worker redoes it). `quiet`: it isn't something you asked for (the dimming when the computer
+        locks), so a screen that doesn't answer is logged but not announced."""
         if not self.screen.ip:
+            return False
+        if quiet and self.screen.offline:
+            log.info("not setting the brightness: the screen isn't answering")
             return False
         self.screen.cancel.set()
         try:
@@ -59,7 +63,8 @@ class Backlight:
             return True
         except OSError as e:
             log.warning("could not set the brightness: %s", e)
-            self.notify("Brillo", f"No se pudo cambiar el brillo: {e}")
+            if not quiet:
+                self.notify("Brillo", f"No se pudo cambiar el brillo: {e}")
             return False
 
     def set_brightness(self, level: int) -> None:
@@ -125,4 +130,4 @@ class Backlight:
     def on_lock_change(self, locked: bool) -> None:
         """The computer got locked or unlocked: turn the backlight down, or back to the day level."""
         if self.dim_on_lock and self.brightness is not None:
-            in_background(self.apply_brightness, config.LOCK_DIM_LEVEL if locked else self.brightness)
+            in_background(self.apply_brightness, config.LOCK_DIM_LEVEL if locked else self.brightness, True)

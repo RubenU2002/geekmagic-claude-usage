@@ -100,6 +100,9 @@ class UsageService:
         self.alert_tracker = alert_tracker
         self.lock = lock
         self.last_fetch: dict[str, float] = {}
+        self.failures: dict[str, int] = {}  # provider -> consecutive failed reads
+        self.retry_at: dict[str, float] = {}  # provider -> not before this (monotonic) once it keeps failing
+        self.last_error: dict[str, Exception] = {}
         self.last_good: dict[str, tuple[Usage, float]] = {}  # provider -> (last usage that was read OK, when)
         self.stale: set[str] = set()  # providers whose image on the device is the dimmed "no fresh data" one
         self.errors: dict[str, str] = {}  # provider -> why its last read failed (gone once a read works)
@@ -108,8 +111,14 @@ class UsageService:
         self.on_failure: Callable[[str, Exception], None] = lambda provider, error: None
 
     def fetch(self, provider: str) -> Usage | None:
-        """Query the provider. Every successful read also feeds the alerts; a failing one may mark the data stale."""
-        self.last_fetch[provider] = time.monotonic()
+        """Query the provider. Every successful read also feeds the alerts; a failing one may mark the data stale.
+        A provider that keeps failing (no internet, a VPN...) is left alone for a while instead of making every cycle
+        wait for its timeout: see `reset_backoff`."""
+        now = time.monotonic()
+        if now < self.retry_at.get(provider, 0):
+            self.on_failure(provider, self.last_error[provider])  # (still failing: it keeps the stale dimming going)
+            return None
+        self.last_fetch[provider] = now
         try:
             usage = self.providers[provider].fetch()
         except Exception as e:  # keep the tray alive no matter what
@@ -120,6 +129,7 @@ class UsageService:
             if isinstance(e, SignInNeeded):
                 self.needs_login.add(provider)
             self.errors[provider] = str(e)
+            self._back_off(provider, e)
             self.on_failure(provider, e)
             return None
         with self.lock:  # (the slow part, the read itself, was above and ran unlocked)
@@ -129,9 +139,24 @@ class UsageService:
             self.stale.discard(provider)
             self.errors.pop(provider, None)
             self.needs_login.discard(provider)
+            self.failures.pop(provider, None)
+            self.retry_at.pop(provider, None)
+            self.last_error.pop(provider, None)
             self.on_read(provider)
             self.alert_tracker.check(provider, usage)  # (which also saves)
         return usage
+
+    def _back_off(self, provider: str, error: Exception) -> None:
+        self.last_error[provider] = error
+        count = self.failures[provider] = self.failures.get(provider, 0) + 1
+        if count >= config.BACKOFF_FROM:
+            wait = min(config.BACKOFF_BASE * 2 ** (count - config.BACKOFF_FROM), config.BACKOFF_MAX)
+            self.retry_at[provider] = time.monotonic() + wait
+            log.info("%s failed %d times in a row; not reading it again for %d s", provider, count, wait)
+
+    def reset_backoff(self) -> None:
+        """Try every provider at the next cycle (you asked for it: a click, "Actualizar ahora")."""
+        self.retry_at.clear()
 
     def recently_read(self, provider: str, within: float) -> bool:
         good = self.last_good.get(provider)

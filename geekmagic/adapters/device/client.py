@@ -14,17 +14,13 @@ import struct
 import threading
 import urllib.request
 
-from geekmagic.core.errors import UsageError
+from geekmagic.core.errors import UploadCancelled, UsageError
 
 CONNECT_TIMEOUT = 3  # seconds to reach the device / get a reply to a small request; a switched-off one fails fast
 UPLOAD_TIMEOUT = 15  # seconds to let the device finish storing an uploaded GIF (~3 s in practice)
 BRIGHTNESS_RANGE = (-10, 100)  # the slider range of the device's own settings page
 
 _theme_ready: set[str] = set()  # devices this process has already put on the Photo Album theme
-
-
-class UploadCancelled(Exception):
-    pass
 
 
 def _device_errors(func):

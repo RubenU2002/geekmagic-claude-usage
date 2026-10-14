@@ -115,6 +115,7 @@ class TrayController:
     def _switched(self, key: str) -> None:
         """Common to every switch: pin the view's last image at once and refresh it in the background."""
         self.persistence.save()  # so a restart or reconnection comes back to this view
+        self.usage.reset_backoff()  # you're looking at it: try again even if it has been failing
         self.ui.set_title(self.tooltip())
         self.ui.refresh_menu()
         self.screen.note_click()  # abort any upload in flight: the device serves one request at a time
@@ -162,6 +163,10 @@ class TrayController:
         log.info("notifications %s", "on" if self.notifications.enabled else "off")
         self.persistence.save()
         self.ui.refresh_menu()
+
+    def refresh_now(self) -> None:
+        self.usage.reset_backoff()
+        self.wake.set()
 
     def toggle_agent_events(self) -> None:
         self.notifications.agent_events = not self.notifications.agent_events

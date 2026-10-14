@@ -94,6 +94,19 @@ class BacklightTests(AppTestCase):
             app.power.set_locked(False)
         self.assertEqual([c.args[0] for c in send.call_args_list], [config.LOCK_DIM_LEVEL, 70])
 
+    def test_the_automatic_dimming_stays_quiet_when_the_screen_does_not_answer(self):
+        app = self.make()
+        app.backlight.brightness = 70
+        send = self.on_device(app, "set_brightness", side_effect=OSError("timed out"))
+        app.screen.offline = True
+        self.assertFalse(app.backlight.apply_brightness(config.LOCK_DIM_LEVEL, quiet=True))
+        self.assertEqual((send.call_count, self.notes), (0, []))
+        app.screen.offline = False
+        self.assertFalse(app.backlight.apply_brightness(config.LOCK_DIM_LEVEL, quiet=True))
+        self.assertEqual(self.notes, [], "failed, but nobody asked for it")
+        self.assertFalse(app.backlight.apply_brightness(40))
+        self.assertIn("No se pudo cambiar el brillo", self.notes[-1][1])  # a menu click does say so
+
     def test_dim_when_locked_refuses_to_guess_the_brightness_to_restore(self):
         app = self.make()
         app.backlight.toggle_dim_on_lock()

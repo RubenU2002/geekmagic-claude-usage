@@ -25,7 +25,7 @@ def build_menu(app, open_logs) -> pystray.Menu:
             pystray.MenuItem("Horas pico", app.mode_action(HOURS), checked=lambda _: view.mode == HOURS),
         )),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Actualizar ahora", lambda: app.wake.set()),
+        pystray.MenuItem("Actualizar ahora", app.refresh_now),
         pystray.MenuItem("Pausar", power.toggle_pause, checked=lambda _: power.paused),
         pystray.MenuItem("Pantalla", pystray.Menu(
             *(pystray.MenuItem(f"Brillo {level} %", _brightness_action(backlight, level),
