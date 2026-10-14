@@ -131,6 +131,9 @@ class FakeRenderer:
                 _capture.single.append((data, animation))
         return Rendered(b"GIF89a", [animation])
 
+    def to_png(self, gif) -> bytes:
+        return b"PNG-of-" + gif
+
     def confirm(self, rendered) -> None:
         self.confirmed.append(rendered)
 
@@ -159,6 +162,10 @@ class FakeDisplay:
 
     def delete_image(self, filename) -> None:
         self.calls.append(("delete", filename))
+
+    def download_image(self, filename) -> bytes:
+        self.calls.append(("download", filename))
+        return b"GIF89a-of-" + filename.encode()
 
     def show_image(self, filename) -> None:
         self.calls.append(("show", filename))
@@ -234,6 +241,8 @@ class FakeUi:
         self.notes: list[tuple[str, str]] = notes if notes is not None else []  # notifications shown: (title, message)
         self.fail_notifications = False
         self.running = False
+        self.save_to: str | None = None  # where the person says to save a picture (None: cancels)
+        self.asked_names: list[str] = []
 
     @property
     def title(self) -> str | None:
@@ -252,6 +261,10 @@ class FakeUi:
         if self.fail_notifications:
             raise RuntimeError("no toast support")
         self.notes.append((title, message))
+
+    def ask_save_path(self, suggested_name: str) -> str | None:
+        self.asked_names.append(suggested_name)
+        return self.save_to
 
     def run(self) -> None:
         self.running = True

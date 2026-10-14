@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from io import BytesIO
+
+from PIL import Image
+
 from geekmagic.adapters.render import views
 from geekmagic.adapters.render.animations import Rotation
 from geekmagic.adapters.render.version import RENDER_ID
@@ -24,6 +28,13 @@ class PillowRenderer:
         if isinstance(data, ErrorScreen):
             return views.ERROR.render(data)
         return views.SINGLE.render(data, animation, self.rotation)
+
+    def to_png(self, gif: bytes) -> bytes:
+        with Image.open(BytesIO(gif)) as image:
+            image.seek(0)  # the whole picture, the way the screen first shows it (the later frames only move the mascot)
+            out = BytesIO()
+            image.convert("RGB").save(out, format="PNG")
+        return out.getvalue()
 
     def confirm(self, rendered: Rendered) -> None:
         for title, name in rendered.picks:

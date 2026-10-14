@@ -96,6 +96,7 @@ The menu, top to bottom (its labels are in Spanish; the English is in brackets):
 - **Vista dividida** (Split view) and **Estadísticas** (Stats): both providers at once.
 - **Más vistas** (More views) ▸ **Proyectos y modelos** (Projects and models) and **Horas pico** (Peak hours).
 - **Actualizar ahora** (Update now) and **Pausar** (Pause).
+- **Guardar pantallazo...** (Save screenshot): saves what the screen is showing, read back from the device, wherever you choose, as a PNG or (name it `.gif`) as the animated GIF.
 - **Pantalla** (Screen) ▸ brightness levels, **Modo nocturno** (Night mode), **Atenuar al bloquear el PC** (Dim when the PC locks).
 - **Opciones** (Options) ▸ **Iniciar sesión** (Sign in), **Notificaciones** (Notifications), **Avisar cuando un agente termine** (Notify when an agent finishes), **Pausar al bloquear el PC** (Pause when the PC locks).
 - **Ver logs** (View logs) and **Salir** (Quit).

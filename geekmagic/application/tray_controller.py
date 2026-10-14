@@ -15,6 +15,7 @@ from geekmagic.application import config
 from geekmagic.application.activity import ActivityCounter
 from geekmagic.application.agents import AgentMonitor
 from geekmagic.application.backlight import Backlight
+from geekmagic.application.capture import ScreenCapture
 from geekmagic.application.notifications import Notifications
 from geekmagic.application.persistence import Persistence
 from geekmagic.application.power import Power
@@ -61,6 +62,7 @@ class TrayController:
             notify=notify, save=save, set_title=ui.set_title, tooltip=self.tooltip, wake=self.wake,
             refresh_menu=ui.refresh_menu,
         )
+        self.capture = ScreenCapture(self.screen, renderer, ui.ask_save_path, notify)
         self.backlight = Backlight(self.screen, notify, save, ui.refresh_menu, night_hours, night_level)
         self.power = Power(lock_sensor, self._refresh_title_and_menu, self._lock_changed, self.wake, self.stop, save)
         self.signin = SignInCoordinator(providers, self.usage, self.screen, notify, self.wake, terminal)

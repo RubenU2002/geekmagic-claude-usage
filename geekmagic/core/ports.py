@@ -72,6 +72,9 @@ class Display(Protocol):
 
     def delete_image(self, filename: str) -> None: ...
 
+    def download_image(self, filename: str) -> bytes:
+        """The stored image file, as it is on the device (what the screen is showing, when it is pinned)."""
+
     def show_image(self, filename: str) -> None: ...
 
     def set_brightness(self, level: float) -> None: ...
@@ -106,6 +109,9 @@ class Renderer(Protocol):
     def render(self, key: str, data: Usage | list[Usage] | ErrorScreen, animation: str) -> Rendered:
         """The screen for `key`: a provider's key (`data` is its Usage, or an ErrorScreen), or one of the views of two
         (core.views; `data` is the list of the two Usage). `animation` is "auto"/"random" or the name of one."""
+
+    def to_png(self, gif: bytes) -> bytes:
+        """A still picture (PNG) of a GIF this renderer drew."""
 
     def confirm(self, rendered: Rendered) -> None:
         """The upload went through: remember what was picked, so it doesn't come back too soon."""
@@ -147,6 +153,9 @@ class Ui(Protocol):
     def refresh_menu(self) -> None: ...
 
     def send(self, title: str, message: str) -> None: ...
+
+    def ask_save_path(self, suggested_name: str) -> str | None:
+        """Ask where to save a picture (a .png, or a .gif to keep it animated): the path chosen, None if cancelled."""
 
     def run(self) -> None:
         """Show the icon and handle its clicks; returns when it is stopped."""

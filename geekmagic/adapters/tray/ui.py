@@ -17,6 +17,8 @@ class TrayUi:
         self.log_path = log_path
         self.icon: pystray.Icon | None = None
         self.titles: dict[str, str] = {}
+        pictures = Path.home() / "Pictures"
+        self.last_folder = pictures if pictures.is_dir() else Path.home()
 
     def attach(self, controller) -> None:
         """Build the icon and its menu for `controller` (which already exists: the menu shows and changes its state)."""
@@ -41,6 +43,31 @@ class TrayUi:
     def send(self, title: str, message: str) -> None:
         """The tray's own notification (the one Windows shows as "Python")."""
         self.icon.notify(message, title)
+
+    def ask_save_path(self, suggested_name: str) -> str | None:
+        """The system's own "save as" window, opened in the folder of the last picture (or Pictures)."""
+        start = self.last_folder if self.last_folder.is_dir() else Path.home()
+        if sys.platform == "darwin":  # (Tk wants the main thread there, which the tray owns)
+            script = (f'POSIX path of (choose file name with prompt "Guardar pantallazo" default name "{suggested_name}" '
+                      f'default location POSIX file "{start}")')
+            result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+            chosen = result.stdout.strip() if result.returncode == 0 else ""
+        else:
+            import tkinter
+            from tkinter import filedialog
+            root = tkinter.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)  # (the tray has no window to sit behind)
+            try:
+                chosen = filedialog.asksaveasfilename(
+                    parent=root, title="Guardar pantallazo", initialdir=str(start), initialfile=suggested_name,
+                    defaultextension=".png",
+                    filetypes=[("Imagen PNG", "*.png"), ("GIF animado", "*.gif")])
+            finally:
+                root.destroy()
+        if chosen:
+            self.last_folder = Path(chosen).parent
+        return chosen or None
 
     def run(self) -> None:
         self.icon.run()

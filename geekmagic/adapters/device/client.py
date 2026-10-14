@@ -114,6 +114,10 @@ class GeekMagicDevice:
         self._get(f"/delete?file=/image/{filename}")
 
     @_device_errors
+    def download_image(self, filename: str) -> bytes:
+        return self._fetch(f"/image/{filename}")
+
+    @_device_errors
     def show_image(self, filename: str) -> None:
         """Pin an already-uploaded image on screen. One request (~0.3 s, the device is slow): the Photo Album theme is
         only selected the first time, or again if the device ever refuses the image (the theme was changed on the
@@ -148,13 +152,16 @@ class GeekMagicDevice:
 
     def _get(self, path: str) -> str:
         """GET `path` and return the body. Reaching the device fails fast, but a reply may take a while."""
+        return self._fetch(path).decode("utf-8", "replace")
+
+    def _fetch(self, path: str) -> bytes:
         conn = http.client.HTTPConnection(self.ip, timeout=CONNECT_TIMEOUT)
         try:
             conn.connect()
             conn.sock.settimeout(REPLY_TIMEOUT)
             conn.request("GET", path)
             resp = conn.getresponse()
-            body = resp.read().decode("utf-8", "replace")
+            body = resp.read()
             if resp.status >= 400:
                 raise OSError(f"the device answered HTTP {resp.status} to {path}")
             return body

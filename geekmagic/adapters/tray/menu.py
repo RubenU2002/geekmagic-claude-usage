@@ -28,6 +28,7 @@ def build_menu(app, open_logs) -> pystray.Menu:
         )),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Actualizar ahora", app.refresh_now),
+        pystray.MenuItem("Guardar pantallazo...", app.capture.take),
         pystray.MenuItem("Pausar", power.toggle_pause, checked=lambda _: power.paused),
         pystray.MenuItem("Pantalla", pystray.Menu(
             *(pystray.MenuItem(f"Brillo {level} %", _brightness_action(backlight, level),
