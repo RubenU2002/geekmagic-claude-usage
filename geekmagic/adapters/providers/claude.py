@@ -33,6 +33,9 @@ _RESET_RE = re.compile(
 _SIGNED_OUT_RE = re.compile(r"not logged in|/login|log ?in again|sign ?in|authenticat|invalid api key|unauthori[sz]ed|token .*expired", re.I)
 
 
+TIMEOUT_SECONDS = 90  # it takes ~10 s, but 30 s or more on a slow connection: a timeout costs a whole cycle for nothing
+
+
 def fetch_usage() -> Usage:
     """Call Claude Code's built-in /usage command. Guaranteed $0 cost."""
     try:
@@ -46,7 +49,7 @@ def fetch_usage() -> Usage:
                 "--no-chrome",
                 "/usage",
             ],
-            capture_output=True, text=True, encoding="utf-8", timeout=30,
+            capture_output=True, text=True, encoding="utf-8", timeout=TIMEOUT_SECONDS,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except FileNotFoundError as e:

@@ -19,7 +19,7 @@ from geekmagic.core.errors import SignInNeeded, UsageError
 from geekmagic.adapters.providers.executables import which
 
 
-CODEX_TIMEOUT = 30
+CODEX_TIMEOUT = 60  # (like Claude's read: slow connections need more than 30 s)
 
 
 def find_codex() -> str | None:
