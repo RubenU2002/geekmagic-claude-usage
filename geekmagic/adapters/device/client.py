@@ -12,11 +12,11 @@ import re
 import socket
 import struct
 import threading
-import urllib.request
 
 from geekmagic.core.errors import UploadCancelled, UsageError
 
-CONNECT_TIMEOUT = 3  # seconds to reach the device / get a reply to a small request; a switched-off one fails fast
+CONNECT_TIMEOUT = 3  # seconds to reach the device; a switched-off one fails fast
+REPLY_TIMEOUT = 10  # seconds to get the reply to a small request: a busy device answers in 2-7 s (0.3 s when idle)
 UPLOAD_TIMEOUT = 15  # seconds to let the device finish storing an uploaded GIF (~3 s in practice)
 BRIGHTNESS_RANGE = (-10, 100)  # the slider range of the device's own settings page
 
@@ -106,12 +106,12 @@ class GeekMagicDevice:
     @_device_errors
     def list_images(self) -> set[str]:
         """Names of the image files stored on the device (parsed from its file-list page)."""
-        html = urllib.request.urlopen(f"http://{self.ip}/filelist?dir=/image/", timeout=CONNECT_TIMEOUT).read().decode("utf-8", "replace")
+        html = self._get("/filelist?dir=/image/")
         return set(re.findall(r"[\w.\-]+\.(?:gif|jpe?g|png)", html, re.IGNORECASE))
 
     @_device_errors
     def delete_image(self, filename: str) -> None:
-        urllib.request.urlopen(f"http://{self.ip}/delete?file=/image/{filename}", timeout=CONNECT_TIMEOUT).read()
+        self._get(f"/delete?file=/image/{filename}")
 
     @_device_errors
     def show_image(self, filename: str) -> None:
@@ -146,9 +146,24 @@ class GeekMagicDevice:
 
     # --- the device's /set?... settings ---------------------------------------------------------------------------
 
+    def _get(self, path: str) -> str:
+        """GET `path` and return the body. Reaching the device fails fast, but a reply may take a while."""
+        conn = http.client.HTTPConnection(self.ip, timeout=CONNECT_TIMEOUT)
+        try:
+            conn.connect()
+            conn.sock.settimeout(REPLY_TIMEOUT)
+            conn.request("GET", path)
+            resp = conn.getresponse()
+            body = resp.read().decode("utf-8", "replace")
+            if resp.status >= 400:
+                raise OSError(f"the device answered HTTP {resp.status} to {path}")
+            return body
+        finally:
+            conn.close()
+
     def _reply(self, query: str) -> str:
         """GET /set?<query> and return what the device answered: "OK", or "FAIL" for what it doesn't understand."""
-        return urllib.request.urlopen(f"http://{self.ip}/set?{query}", timeout=CONNECT_TIMEOUT).read().decode("utf-8", "replace").strip()
+        return self._get(f"/set?{query}").strip()
 
     def _set(self, query: str) -> None:
         body = self._reply(query)

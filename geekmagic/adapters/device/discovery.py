@@ -8,7 +8,7 @@ import socket
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-PROBE_TIMEOUT = 0.8  # seconds per host; hosts that don't exist simply time out
+PROBE_TIMEOUT = 2.0  # seconds per host; hosts that don't exist simply time out. The device itself can take 2 s to answer when busy
 MAX_NETWORKS = 4  # /24s scanned in one go (the main one first)
 
 
@@ -45,7 +45,7 @@ def local_networks() -> list[str]:
     return prefixes[:MAX_NETWORKS]
 
 
-def scan(hosts: list[str] | None = None, timeout: float = PROBE_TIMEOUT, workers: int = 64) -> list[str]:
+def scan(hosts: list[str] | None = None, timeout: float = PROBE_TIMEOUT, workers: int = 128) -> list[str]:
     """Every host in `hosts` (default: all of this machine's /24 networks, plus the device's own hotspot
     address) that answers like a SmallTV. The main network is scanned first and, if it has one, we stop there."""
     if hosts is not None:
@@ -63,7 +63,7 @@ def scan(hosts: list[str] | None = None, timeout: float = PROBE_TIMEOUT, workers
 
 def find_device(prefer: str | None = None) -> str | None:
     """The device's IP: `prefer` if it still answers, else the first one a scan finds."""
-    if prefer and probe(prefer, 1.5):
+    if prefer and probe(prefer, 8.0):  # (a busy device is slow, not gone)
         return prefer
     found = scan()
     if prefer in found:
