@@ -15,8 +15,11 @@ $stampFile = Join-Path $root ".claude\.deployed-hash"
 
 # Claude Code sends the hook's context on stdin; a retry after a failed deploy must not block the session forever.
 $again = $false
-if ([Console]::IsInputRedirected) {
-    try { $again = [Console]::In.ReadToEnd() -match '"stop_hook_active"\s*:\s*true' } catch { }
+if ($OnlyIfChanged -and [Console]::IsInputRedirected) {  # (the hook's mode: a manual redeploy never waits on stdin)
+    try {  # (not ReadToEnd: a caller that leaves its pipe open would hang us)
+        $read = [Console]::In.ReadToEndAsync()
+        if ($read.Wait(1500)) { $again = $read.Result -match '"stop_hook_active"\s*:\s*true' }
+    } catch { }
 }
 
 function Get-CodeHash {
@@ -36,10 +39,16 @@ $hash = Get-CodeHash
 # (-OnlyIfChanged: an app that isn't running at all counts as out of date too)
 if ($OnlyIfChanged -and (Get-Tray) -and (Test-Path $stampFile) -and ((Get-Content $stampFile -Raw).Trim() -eq $hash)) { exit 0 }
 
+# The task has to be stopped as well as its process, or Task Scheduler still counts it as running and ignores the start.
+Stop-ScheduledTask -TaskName GeekMagicUsage -ErrorAction SilentlyContinue
 Get-Tray | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+for ($i = 0; $i -lt 20 -and (Get-Tray); $i++) { Start-Sleep -Milliseconds 500 }
 Start-Sleep -Seconds 2
-Start-ScheduledTask -TaskName GeekMagicUsage
-Start-Sleep -Seconds 8
+foreach ($attempt in 1..2) {
+    Start-ScheduledTask -TaskName GeekMagicUsage
+    Start-Sleep -Seconds 8
+    if (Get-Tray) { break }
+}
 
 if (-not (Get-Tray)) {
     $log = if (Test-Path (Join-Path $root "tray.log")) { (Get-Content (Join-Path $root "tray.log") -Tail 15) -join "`n" } else { "(no log)" }
