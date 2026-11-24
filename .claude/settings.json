@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/scripts/redeploy.ps1\" -OnlyIfChanged",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

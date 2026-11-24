@@ -1,0 +1,30 @@
+﻿[package]
+name = "geekmagic-usage"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.84"
+description = "GeekMagic SmallTV usage screen for Claude Code and Codex (Rust port, low memory)"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+chrono-tz = "0.10"
+gif = "0.13"
+color_quant = "1"
+png = "0.17"
+ab_glyph = "0.2"
+socket2 = "0.5"
+regex = "1"
+log = { version = "0.4", features = ["std"] }
+
+[target.'cfg(windows)'.dependencies]
+tray-icon = { version = "0.19", default-features = false }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_System_StationsAndDesktops", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_UI_Controls_Dialogs", "Win32_System_Console", "Win32_Graphics_Gdi", "Win32_System_LibraryLoader"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "unwind"
+strip = true

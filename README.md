@@ -68,10 +68,10 @@ and gives you an icon to switch between Claude and Codex. No tray? Run a single
 provider from the command line instead:
 
 ```bash
-python geekmagic_claude.py                                         # Claude, once
-python geekmagic_claude.py --provider codex                        # Codex, once
-python geekmagic_claude.py --ip 192.168.1.18 --loop 60             # repeat every 60 s
-python geekmagic_claude.py --discover                              # just list the devices found
+python geekmagic_usage.py                                         # Claude, once
+python geekmagic_usage.py --provider codex                        # Codex, once
+python geekmagic_usage.py --ip 192.168.1.18 --loop 60             # repeat every 60 s
+python geekmagic_usage.py --discover                              # just list the devices found
 ```
 
 `codex` is looked up on `PATH`, then in `~/.local/bin`, `/opt/homebrew/bin`,
@@ -86,7 +86,7 @@ adds an icon to switch provider.
 
 | | Windows / Linux | macOS |
 |---|---|---|
-| Switch provider | left-click the icon | click the menu-bar icon, choose Claude or Codex |
+| Switch provider | left-click the icon (with no screen to reach: it opens the [simulated screen](#no-screen-the-tray-is-the-screen) instead) | click the menu-bar icon, choose Claude or Codex |
 | Menu | right-click (see below) | same, from the same click |
 | Split / stats view | menu items only (the click never enters them; it takes you back out) | menu items |
 
@@ -95,9 +95,10 @@ The menu, top to bottom (its labels are in Spanish; the English is in brackets):
 - **Claude**, **Codex**: one provider's screen.
 - **Vista dividida** (Split view) and **Estadísticas** (Stats): both providers at once.
 - **Más vistas** (More views) ▸ **Proyectos y modelos** (Projects and models) and **Horas pico** (Peak hours).
-- **Actualizar ahora** (Update now) and **Pausar** (Pause).
+- **Actualizar ahora** (Update now), **Pantalla simulada** (Simulated screen) and **Pausar** (Pause).
+- **Guardar pantallazo...** (Save screenshot): saves what the screen is showing, read back from the device, wherever you choose, as a PNG or (name it `.gif`) as the animated GIF.
 - **Pantalla** (Screen) ▸ brightness levels, **Modo nocturno** (Night mode), **Atenuar al bloquear el PC** (Dim when the PC locks).
-- **Opciones** (Options) ▸ **Notificaciones** (Notifications), **Avisar cuando un agente termine** (Notify when an agent finishes), **Pausar al bloquear el PC** (Pause when the PC locks).
+- **Opciones** (Options) ▸ **Iniciar sesión** (Sign in), **Notificaciones** (Notifications), **Avisar cuando un agente termine** (Notify when an agent finishes), **Pausar al bloquear el PC** (Pause when the PC locks).
 - **Ver logs** (View logs) and **Salir** (Quit).
 
 - **Near-instant switching.** Each provider's last image already lives on the
@@ -110,11 +111,38 @@ The menu, top to bottom (its labels are in Spanish; the English is in brackets):
 - **Screen off or unreachable?** It retries every ~10 s, and the moment the
   device answers it puts your view back on screen (and looks for it on the
   network if it moved, see below).
+- **No screen? The tray is the screen.** <a id="no-screen-the-tray-is-the-screen"></a>While the GeekMagic can't be
+  reached (switched off, another network, not found yet) the app keeps reading
+  your usage and still draws every picture it would have uploaded, and
+  **left-clicking the icon opens a window that plays it**, the same 240 x 240 GIF
+  at the real screen's size, with the same mascot animation. Click the icon again to close it; a
+  click *inside* the window goes on to the next provider, and the right-click menu still
+  picks any view. **Pantalla simulada** in the menu opens it even when the real screen
+  is there. (macOS: the picture opens in the system viewer.)
 - **After an update** the images stored on the device were drawn by the old
   code, so the app redraws them once in the background (one per cycle) instead
   of leaving old labels or colours there until you open each view.
 - **View logs** opens `tray.log` (next to the script, rotated at 512 KB).
   What the app remembers between runs lives in `tray_state.json`.
+
+### Signing in
+
+If a provider can't be read because you're **signed out** (or its session
+expired), picking it **opens its sign-in** in a terminal window: `claude auth
+login` or `codex login`. Approve it in the browser that opens and the screen fills
+in by itself, within seconds (it looks again every 10 s while a sign-in is pending).
+
+- **When it opens:** when you pick a signed-out provider (the menu or the
+  click). Not again for 5 minutes, so cycling past it with the click doesn't pile
+  up windows. **Opciones ▸ Iniciar sesión** opens it on demand for either provider.
+- **What the screen says meanwhile:** the provider's screen shows **"Sign-in
+  needed"** and what to do, instead of nothing. If its CLI isn't installed it says
+  how to install it. In the split and stats views the panel keeps its place with
+  dashes until it can be read.
+- **How it knows it's signed out:** a read fails for that reason (each CLI says so
+  in its own way). A timeout or a network error never opens a window.
+- A provider that *was* working and then fails keeps its last numbers, dimmed
+  (see [Stale data](#stale-data)).
 
 ### Split view
 
@@ -151,7 +179,7 @@ Both are counted the same way from each provider's own local log, `~/.claude`
 cached, recounted every 10 minutes (the first count of a large history takes a
 second or two). For Claude they agree with what `claude /usage` calls "Last
 24h / Last 7d". Only this machine's activity is counted. It's a still image, so
-it uploads quickly. Logic: `usage_stats.py`.
+it uploads quickly. Logic: `geekmagic/core/activity.py` (the counting) and `geekmagic/adapters/providers/*_logs.py` (reading each provider's logs).
 
 ### Projects and models, and peak hours
 
@@ -223,7 +251,7 @@ notification says which one:
   `task_complete`, and a pending approval or question request counts as waiting
   (best effort: not verified against a real approval, and not every setup records
   them). A log that goes quiet is treated as abandoned after a while. Polled every
-  2 seconds. Logic: `agent_activity.py`.
+  2 seconds. Logic: `geekmagic/adapters/providers/*_logs.py`.
 
 ### Codex's free resets
 
@@ -246,7 +274,7 @@ the last 30 minutes (the last day for the week, and only once there's at least
 a quarter of that much history, so a short burst isn't stretched over days),
 so a burst of work shows up instead of being averaged away. Nothing is shown when it's too early in a window (under
 8 % of it) or almost nothing has been used, and never on stale numbers. Window
-lengths are 5 hours and 7 days; Codex reports its own. Logic: `pace.py`.
+lengths are 5 hours and 7 days; Codex reports its own. Logic: `geekmagic/core/pace.py`.
 
 ### Pause
 
@@ -283,10 +311,10 @@ guessing and changing it behind your back.
   **resets**. It watches *both* providers even when only one is on screen
   (the hidden one is read every 2 minutes). Each alert fires once, also across
   restarts. Turn them off from the menu (**Notifications**); the choice is remembered.
-  Thresholds live in `alerts.py`.
+  Thresholds live in `geekmagic/core/alerts.py`.
 - **How notifications are sent.** Each alert is shown **once**, by the tray app
   itself (the one Windows lists as "Python"). Only if that fails does the
-  system's own route (`notifier.py`: a PowerShell toast on Windows, `osascript`
+  system's own route (`geekmagic/adapters/system/notifier.py`: a PowerShell toast on Windows, `osascript`
   on macOS, `notify-send` on Linux) step in as a backup; sending both made every
   alert appear twice. The backup's text travels in environment variables, never
   inside a command. `GEEKMAGIC_NO_NOTIFY=1` turns that backup off (the tests use it).
@@ -312,7 +340,7 @@ it remembers, and otherwise scans your local network (about 4 s) for something
 answering like a SmallTV (`/space.json`). If the screen later stops answering,
 it scans again after a minute, so a new address after a router restart or a
 power cut is picked up by itself (it notifies you, and remembers it).
-`python geekmagic_claude.py --discover` lists what it finds. If you have several
+`python geekmagic_usage.py --discover` lists what it finds. If you have several
 screens, pass `--ip` to say which one.
 
 ### Start it at login (any OS)
@@ -323,11 +351,13 @@ python tray.py --ip 192.168.1.18 --install-startup    # ...pinning the device ad
 python tray.py --uninstall-startup
 ```
 
-- **Windows:** a Task Scheduler task (`GeekMagicClaude`) that runs at logon, windowless.
-- **macOS:** a LaunchAgent `~/Library/LaunchAgents/com.geekmagic.claude-usage.plist`
+- **Windows:** a Task Scheduler task (`GeekMagicUsage`) that runs at logon, windowless. (Installs made when the app only showed Claude
+  used other names — `GeekMagicClaude`, `com.geekmagic.claude-usage`, `geekmagic-claude-usage.desktop` —
+  and are replaced when you install again, and removed when you uninstall.)
+- **macOS:** a LaunchAgent `~/Library/LaunchAgents/com.geekmagic.usage.plist`
   (restarts after a crash, not after you choose Quit; sets a `PATH` that
   includes Homebrew and `~/.local/bin` so `claude`/`codex` are found).
-- **Linux:** an autostart entry `~/.config/autostart/geekmagic-claude-usage.desktop`
+- **Linux:** an autostart entry `~/.config/autostart/geekmagic-usage.desktop`
   (needs a desktop with a system tray / AppIndicator).
 
 ## Animations
@@ -335,12 +365,12 @@ python tray.py --uninstall-startup
 By default (`--animation auto`) every push picks a random animation from the
 provider's own set, never one of the last three that played. Pass
 `--animation NAME` to pin one instead (`random` is the same as `auto`). All of
-them live side by side in the `ANIMATIONS` dict in `geekmagic_claude.py` —
+them live side by side in the `ANIMATIONS` dict in `geekmagic/adapters/render/animations.py` —
 picking one never deletes another, and adding a new one is just a new entry.
 
 ```bash
-python geekmagic_claude.py --ip 192.168.1.18 --animation coffee
-python geekmagic_claude.py --ip 192.168.1.18 --provider codex --animation bolt
+python geekmagic_usage.py --ip 192.168.1.18 --animation coffee
+python geekmagic_usage.py --ip 192.168.1.18 --provider codex --animation bolt
 ```
 
 ### Claude
@@ -407,25 +437,25 @@ usage) and `THEMES` (its mascot and colours).
 
 ## Running it without the tray (macOS launchd loop)
 
-The included `com.example.geekmagic-claude.plist` is a
+The included `com.example.geekmagic-usage.plist` is a
 [launchd](https://www.launchd.info/) LaunchAgent that runs the plain command
 line script in the background, at login and on a timer. (The tray app's
 `--install-startup` is simpler if you want the tray.)
 
 1. Copy it and fill in the placeholders:
    ```bash
-   cp com.example.geekmagic-claude.plist ~/Library/LaunchAgents/com.yourname.geekmagic-claude.plist
+   cp com.example.geekmagic-usage.plist ~/Library/LaunchAgents/com.yourname.geekmagic-usage.plist
    ```
    Edit that copy:
-   - `Label` — make it match the filename (e.g. `com.yourname.geekmagic-claude`)
+   - `Label` — make it match the filename (e.g. `com.yourname.geekmagic-usage`)
    - The `python3` path — run `which python3` and use that exact path
-   - The path to `geekmagic_claude.py` — wherever you cloned this repo
+   - The path to `geekmagic_usage.py` — wherever you cloned this repo
    - `--ip` — your device's IP (and `--provider codex` for Codex)
    - Both `StandardOutPath`/`StandardErrorPath` — anywhere you want the log written
 
 2. Load it:
    ```bash
-   launchctl load ~/Library/LaunchAgents/com.yourname.geekmagic-claude.plist
+   launchctl load ~/Library/LaunchAgents/com.yourname.geekmagic-usage.plist
    ```
 
 It runs once immediately (`RunAtLoad`) and every 60 seconds (`StartInterval`)
@@ -433,8 +463,8 @@ while you're logged in, and restarts after a reboot or logout/login.
 
 ```bash
 tail -f /path/to/your/log.txt                                            # watch it work
-launchctl unload ~/Library/LaunchAgents/com.yourname.geekmagic-claude.plist   # pause
-launchctl load   ~/Library/LaunchAgents/com.yourname.geekmagic-claude.plist   # resume
+launchctl unload ~/Library/LaunchAgents/com.yourname.geekmagic-usage.plist   # pause
+launchctl load   ~/Library/LaunchAgents/com.yourname.geekmagic-usage.plist   # resume
 ```
 
 **Gotchas**
@@ -453,39 +483,55 @@ launchctl load   ~/Library/LaunchAgents/com.yourname.geekmagic-claude.plist   # 
   stops it.
 
 Other platforms: use `cron`, a `systemd --user` timer, or Windows Task
-Scheduler to run `python3 geekmagic_claude.py --ip ... [--provider codex]` on a
+Scheduler to run `python3 geekmagic_usage.py --ip ... [--provider codex]` on a
 schedule — or just use the tray app's `--install-startup`.
+
+## Code layout
+
+The code is a package, `geekmagic/`, built as a **hexagonal architecture** (ports and adapters): what the app is about is in
+the middle and knows nothing of the outside world; each outside thing plugs in through an interface. `ARCHITECTURE.md` has the
+diagrams, the rule and how to add a provider or a view.
+
+| Folder | What it is |
+|---|---|
+| `core/` | The typed model (`Usage`...), the pure rules (pace, alerts, activity counting) and the **ports**: the interfaces for everything outside. Imports nothing. |
+| `application/` | The use cases: reading usage, keeping the screen up to date, agents, backlight, pause, sign-in. Written against the ports only. |
+| `adapters/providers/` | Claude and Codex: read their usage, their logs, sign in. |
+| `adapters/render/` | Mascots, animations and one class per screen, drawn with Pillow. |
+| `adapters/device/` | The SmallTV's web API and finding it on the network. |
+| `adapters/system/` | Notifications, lock detection, start at login, terminals: what depends on the OS. |
+| `adapters/store/`, `adapters/tray/` | The state file; the tray icon and its menu (what drives the application). |
+| `bootstrap.py` | The one place that picks which adapter implements each port. |
+
+`tray.py` and `geekmagic_usage.py` at the top are launchers for `geekmagic.tray_main` and `geekmagic.cli`.
 
 ## Tests
 
-All the tests live in [`tests/`](tests/) and need nothing but Python: no real
-device, no Claude Code or Codex login (the device, the network and the
-providers are faked).
+All the tests live in [`tests/`](tests/), in folders that mirror the package, and need nothing but Python: no real
+device, no Claude Code or Codex login (the device, the network and the providers are faked).
 
 ```bash
-python -m unittest                      # everything, from the repo root
-python -m unittest tests.test_alerts    # one file
+python -m unittest                                   # everything, from the repo root
+python -m unittest tests.core.test_alerts            # one file
+python -m unittest discover -s tests/application -t .   # one folder
 ```
 
-| File | Covers |
+| Folder | Covers |
 |---|---|
-| `test_alerts.py` | colour thresholds and when notifications fire |
-| `test_pace.py` | pace projection: where a window ends up, when it runs out |
-| `test_agent_activity.py` | deciding from the logs whether Claude / Codex is working, waiting for you or idle, per session |
-| `test_notifier.py` | the system-route backup per OS, and that nothing in the text can break (or inject into) the command |
-| `test_single_instance.py` | a second copy can't start while the first runs, and the lock frees up afterwards |
-| `test_response_times.py` | small-but-identical GIFs, one request to show an image, parallel reads, start-up order |
-| `test_usage_stats.py` | the same activity stats for both providers (counts, sessions, daily chart, cache), Codex's free resets |
-| `test_session_lock.py` | screen-lock detection (real here, mocked for macOS / Linux) |
-| `test_brightness.py` | brightness and night mode, against a fake device |
-| `test_codex_usage.py` | the Codex limits query (against a fake `app-server`) |
-| `test_discover.py` | finding the device on the network |
-| `test_render_states.py` | alert colours, stale dimming, 12-hour clock, split and stats views, pace on screen |
-| `test_device_errors.py` | a device that cuts responses short is treated as unreachable |
-| `test_tray_logic.py` | tray behaviour: view restore, alerts, pace history, pause and lock, brightness, stats view, rediscovery, clicks vs uploads |
+| `tests/core/` | The rules: colour thresholds and alerts, pace projection, counting activity from events, merging an agent's sessions, the provider registry |
+| `tests/application/` | The use cases, one file per service, on fakes of every port: usage and alerts, the screen and its stored images, view restore, clicks vs uploads, pause and lock, backlight, agents (per session), activity counts, sign-in, timing |
+| `tests/adapters/providers/` | Reading Claude's and Codex's usage and logs (against fake CLIs and log folders), telling "signed out" from other failures |
+| `tests/adapters/render/` | Every screen (colours, stale dimming, 12-hour clock, split / stats / breakdown / hours, pace, the working and waiting tags) and small-but-identical GIFs |
+| `tests/adapters/device/` | The device client against a fake device (one request to show an image, brightness, night mode, truncated replies), and finding it |
+| `tests/adapters/system/`, `store/`, `tray/` | Notifications per OS, lock detection, one copy at a time, terminals, start at login; the state file; the tray menu |
 
-The tray tests need a desktop session (they build the tray icon objects) and
-skip themselves without one.
+`tests/test_architecture.py` is the architecture as a test: `core` and `application` may not import an adapter or a third-party
+library, and one adapter may not import another (the diagrams in [`ARCHITECTURE.md`](ARCHITECTURE.md) are that rule).
+
+`tests/support.py` has the shared harness: a fake for every port and a tray controller built on them through the same
+composition root the real app uses, so no test needs a screen, a network, a login or a desktop.
+
+Only the tray menu's own tests need a desktop session (they build the real tray icon) and skip themselves without one.
 
 ## Firmware API reference (stock SmallTV Ultra)
 
