@@ -157,6 +157,12 @@ class Ui(Protocol):
     def ask_save_path(self, suggested_name: str) -> str | None:
         """Ask where to save a picture (a .png, or a .gif to keep it animated): the path chosen, None if cancelled."""
 
+    def show_simulator(self) -> None:
+        """Open the window that simulates the screen (or bring it to the front if it is open)."""
+
+    def toggle_simulator(self) -> None:
+        """Open the simulated screen's window, or close it if it is open."""
+
     def run(self) -> None:
         """Show the icon and handle its clicks; returns when it is stopped."""
 

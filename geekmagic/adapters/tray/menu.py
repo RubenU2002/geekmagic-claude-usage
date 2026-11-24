@@ -10,13 +10,13 @@ from geekmagic.core.views import BREAKDOWN, HOURS, SPLIT, STATS
 
 def build_menu(app, open_logs) -> pystray.Menu:
     """`app` is the TrayController whose state the checkmarks show and whose commands the items run; `open_logs` is the
-    UI's own command for "Ver logs"."""
+    UI's own command for "Ver logs". The left-click and "Pantalla simulada" go through the app too."""
     view, power, backlight, notifications = app.view, app.power, app.backlight, app.notifications
     titles = app.providers.titles
     return pystray.Menu(
         pystray.MenuItem(lambda _: app.screen.status_line(), None, enabled=False),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Alternar Claude / Codex", app.toggle, default=True, visible=False),
+        pystray.MenuItem("Alternar Claude / Codex", app.tray_click, default=True, visible=False),
         *(pystray.MenuItem(title, app.select_action(key), radio=True,
                            checked=lambda _, key=key: view.mode is None and view.provider == key)
           for key, title in titles.items()),
@@ -28,6 +28,7 @@ def build_menu(app, open_logs) -> pystray.Menu:
         )),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Actualizar ahora", app.refresh_now),
+        pystray.MenuItem("Pantalla simulada", app.open_simulator),
         pystray.MenuItem("Guardar pantallazo...", app.capture.take),
         pystray.MenuItem("Pausar", power.toggle_pause, checked=lambda _: power.paused),
         pystray.MenuItem("Pantalla", pystray.Menu(

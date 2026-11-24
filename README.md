@@ -86,7 +86,7 @@ adds an icon to switch provider.
 
 | | Windows / Linux | macOS |
 |---|---|---|
-| Switch provider | left-click the icon | click the menu-bar icon, choose Claude or Codex |
+| Switch provider | left-click the icon (with no screen to reach: it opens the [simulated screen](#no-screen-the-tray-is-the-screen) instead) | click the menu-bar icon, choose Claude or Codex |
 | Menu | right-click (see below) | same, from the same click |
 | Split / stats view | menu items only (the click never enters them; it takes you back out) | menu items |
 
@@ -95,7 +95,7 @@ The menu, top to bottom (its labels are in Spanish; the English is in brackets):
 - **Claude**, **Codex**: one provider's screen.
 - **Vista dividida** (Split view) and **Estadísticas** (Stats): both providers at once.
 - **Más vistas** (More views) ▸ **Proyectos y modelos** (Projects and models) and **Horas pico** (Peak hours).
-- **Actualizar ahora** (Update now) and **Pausar** (Pause).
+- **Actualizar ahora** (Update now), **Pantalla simulada** (Simulated screen) and **Pausar** (Pause).
 - **Guardar pantallazo...** (Save screenshot): saves what the screen is showing, read back from the device, wherever you choose, as a PNG or (name it `.gif`) as the animated GIF.
 - **Pantalla** (Screen) ▸ brightness levels, **Modo nocturno** (Night mode), **Atenuar al bloquear el PC** (Dim when the PC locks).
 - **Opciones** (Options) ▸ **Iniciar sesión** (Sign in), **Notificaciones** (Notifications), **Avisar cuando un agente termine** (Notify when an agent finishes), **Pausar al bloquear el PC** (Pause when the PC locks).
@@ -111,6 +111,14 @@ The menu, top to bottom (its labels are in Spanish; the English is in brackets):
 - **Screen off or unreachable?** It retries every ~10 s, and the moment the
   device answers it puts your view back on screen (and looks for it on the
   network if it moved, see below).
+- **No screen? The tray is the screen.** <a id="no-screen-the-tray-is-the-screen"></a>While the GeekMagic can't be
+  reached (switched off, another network, not found yet) the app keeps reading
+  your usage and still draws every picture it would have uploaded, and
+  **left-clicking the icon opens a window that plays it**, the same 240 x 240 GIF
+  at the real screen's size, with the same mascot animation. Click the icon again to close it; a
+  click *inside* the window goes on to the next provider, and the right-click menu still
+  picks any view. **Pantalla simulada** in the menu opens it even when the real screen
+  is there. (macOS: the picture opens in the system viewer.)
 - **After an update** the images stored on the device were drawn by the old
   code, so the app redraws them once in the background (one per cycle) instead
   of leaving old labels or colours there until you open each view.

@@ -243,6 +243,7 @@ class FakeUi:
         self.running = False
         self.save_to: str | None = None  # where the person says to save a picture (None: cancels)
         self.asked_names: list[str] = []
+        self.simulator: list[str] = []  # what the application asked of the simulated screen's window: "show" / "toggle"
 
     @property
     def title(self) -> str | None:
@@ -265,6 +266,12 @@ class FakeUi:
     def ask_save_path(self, suggested_name: str) -> str | None:
         self.asked_names.append(suggested_name)
         return self.save_to
+
+    def show_simulator(self) -> None:
+        self.simulator.append("show")
+
+    def toggle_simulator(self) -> None:
+        self.simulator.append("toggle")
 
     def run(self) -> None:
         self.running = True

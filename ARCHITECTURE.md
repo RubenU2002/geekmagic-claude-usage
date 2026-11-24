@@ -60,7 +60,7 @@ library, or if one adapter imports another.
 | `StateStore` | to remember things between runs | `adapters/store/json_store.py` |
 | `LockSensor` | to know the computer is locked | `adapters/system/session_lock.py` |
 | `TerminalLauncher` | to open a terminal that runs a command (a sign-in) | `adapters/system/terminal.py` |
-| `Ui` | (driving) to tell the tray icon its title, icon, menu | `adapters/tray/ui.py` |
+| `Ui` | (driving) to tell the tray icon its title, icon, menu, and to open the simulated screen's window | `adapters/tray/ui.py`, `adapters/tray/simulator.py` |
 
 ## Application: the use cases
 

@@ -13,6 +13,7 @@ from collections.abc import Callable
 
 from geekmagic.application import config
 from geekmagic.application import image_files
+from geekmagic.application.local_screen import LocalScreen
 from geekmagic.core.errors import UploadCancelled
 from geekmagic.core.model import ErrorScreen, Usage
 from geekmagic.core.ports import Display, DeviceLocator, Renderer
@@ -58,6 +59,7 @@ class Screen:
         self.shown_failed = False  # the last attempt to put a remembered image on screen didn't get through
         self.error_shown: dict[str, str] = {}  # provider -> the error its image on the device says
         self.push_lock = threading.Lock()  # the device serves one request at a time
+        self.local = LocalScreen(active_key)  # the same pictures, for the simulated screen when the device isn't there
 
     # --- remembered ---------------------------------------------------------------------------------------------
 
@@ -180,6 +182,7 @@ class Screen:
             log.info("uploading %s -> %s", key, filename)
             try:
                 rendered = self.renderer.render(key, data, self.animation)
+                self.local.remember(key, rendered.gif, data)  # (the simulated screen shows it whether or not it gets there)
                 self.device.upload(rendered.gif, filename, cancel=cancel)
             except UploadCancelled:
                 log.info("upload cancelled (%s)", key)
@@ -270,11 +273,14 @@ class Screen:
         self.set_title(self.tooltip())
 
     def deliver(self, key: str, data: Usage | list[Usage] | ErrorScreen) -> str:
-        """Upload `data` for a view: "ok", "cancelled" (a click got in the way), "offline" or "error"."""
+        """Upload `data` for a view: "ok", "cancelled" (a click got in the way), "offline" or "error". While the device
+        can't be reached the picture is still drawn (see show_locally), for the simulated screen."""
         if not self.ip:
             self.mark_offline("no device address yet")
+            self.show_locally(key, data)
             return "offline"
         if self.offline and not self.device_is_back():
+            self.show_locally(key, data)
             return "offline"
         try:
             if not self.upload(key, data):
@@ -291,6 +297,17 @@ class Screen:
             self.came_back()
         self.set_title(self.tooltip())
         return "ok"
+
+    def show_locally(self, key: str, data: Usage | list[Usage] | ErrorScreen) -> None:
+        """Draw the view for the simulated screen only (the device can't be reached), unless the picture it already has
+        was drawn from this very data: a retry every few seconds must not redraw the same thing."""
+        try:
+            data = self.flag(key, data)
+            if self.local.is_current(key, data):
+                return
+            self.local.remember(key, self.renderer.render(key, data, self.animation).gif, data)
+        except Exception:  # the simulated screen is a convenience: it must never break the update loop
+            log.warning("could not draw %s for the simulated screen", key, exc_info=True)
 
     # --- clicks -------------------------------------------------------------------------------------------------
 

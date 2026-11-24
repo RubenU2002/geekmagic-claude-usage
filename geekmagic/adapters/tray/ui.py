@@ -10,12 +10,14 @@ import pystray
 
 from geekmagic.adapters.tray.icons import icon_for
 from geekmagic.adapters.tray.menu import build_menu
+from geekmagic.adapters.tray.simulator import SimulatorWindow
 
 
 class TrayUi:
     def __init__(self, log_path: Path) -> None:
         self.log_path = log_path
         self.icon: pystray.Icon | None = None
+        self.simulator: SimulatorWindow | None = None
         self.titles: dict[str, str] = {}
         pictures = Path.home() / "Pictures"
         self.last_folder = pictures if pictures.is_dir() else Path.home()
@@ -23,6 +25,8 @@ class TrayUi:
     def attach(self, controller) -> None:
         """Build the icon and its menu for `controller` (which already exists: the menu shows and changes its state)."""
         self.titles = controller.providers.titles
+        # the simulated screen shows the pictures the app draws for the device; a click in it goes on to the next provider
+        self.simulator = SimulatorWindow(controller.screen.local.latest, controller.toggle, lambda: "GeekMagic (simulada)")
         self.icon = pystray.Icon("geekmagic-usage", icon_for(controller.view.key, self.titles), controller.tooltip(),
                                  menu=build_menu(controller, self.open_logs))
 
@@ -69,10 +73,17 @@ class TrayUi:
             self.last_folder = Path(chosen).parent
         return chosen or None
 
+    def show_simulator(self) -> None:
+        self.simulator.show()
+
+    def toggle_simulator(self) -> None:
+        self.simulator.toggle()
+
     def run(self) -> None:
         self.icon.run()
 
     def stop(self) -> None:
+        self.simulator.close()
         self.icon.stop()
 
     # --- the menu's own commands --------------------------------------------------------------------------------

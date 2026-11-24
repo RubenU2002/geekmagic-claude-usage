@@ -135,6 +135,19 @@ class TrayController:
         self._switched(provider)
         in_background(self.signin.ask, provider)  # (only does anything if it's signed out)
 
+    def tray_click(self) -> None:
+        """Left-click on the icon. With the screen there, on to the next provider (see toggle). Without it the tray is the
+        screen: the window that simulates it opens (and a second click closes it); a click inside that window is what
+        goes on to the next provider."""
+        if self.screen.ip and not self.screen.offline:
+            self.toggle()
+        else:
+            self.ui.toggle_simulator()
+
+    def open_simulator(self) -> None:
+        """Menu: the simulated screen's window, whether or not the real one is there."""
+        self.ui.show_simulator()
+
     def toggle(self) -> None:
         """Left-click: on to the next provider. From a view of both it goes back to the provider you were on."""
         if self.view.mode:
